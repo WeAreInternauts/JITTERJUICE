@@ -456,32 +456,41 @@
       return performance.now();
     }
 
-    async function checkWorkerHealth(){
-      workerUrlBadge.textContent = WORKER_BASE.replace(/^https?:\/\//,"");
+async function checkWorkerHealth(){
+  workerUrlBadge.textContent = WORKER_BASE.replace(/^https?:\/\//,"");
 
-      if (WORKER_BASE.includes("REPLACE_ME")) {
-        healthDot.className = "dot bad";
-        healthText.textContent = "Worker: set WORKER_BASE in HTML";
-        return false;
-      }
+  if (WORKER_BASE.includes("REPLACE_ME")) {
+    healthDot.className = "dot bad";
+    healthText.textContent = "Worker: set WORKER_BASE in HTML";
+    return false;
+  }
 
-      try {
-        const t0 = now();
-        const res = await fetch(WORKER_BASE + "/ping", { cache: "no-store" });
-        const t1 = now();
-        if (!res.ok) throw new Error("Bad status: " + res.status);
-        const data = await res.json().catch(()=> ({}));
-        healthDot.className = "dot good";
-        healthText.textContent = "Worker: OK (" + Math.round(t1 - t0) + "ms)";
-        serverEl.textContent = WORKER_BASE;
-        return true;
-      } catch (e) {
-        healthDot.className = "dot bad";
-        healthText.textContent = "Worker: unreachable";
-        serverEl.textContent = WORKER_BASE;
-        return false;
-      }
-    }
+  try {
+    const t0 = now();
+    const res = await fetch(WORKER_BASE + "/ping", { cache: "no-store" });
+    const t1 = now();
+    if (!res.ok) throw new Error("Bad status: " + res.status);
+
+    const data = await res.json().catch(()=> ({}));
+    const colo = data.colo ? String(data.colo) : "unknown edge";
+    const country = data.country ? String(data.country) : "";
+    const region = data.region ? String(data.region) : "";
+
+    healthDot.className = "dot good";
+    healthText.textContent = `Worker: OK · ${colo} (${Math.round(t1 - t0)}ms)`;
+
+    // Show full server info in the Diagnostics card
+    const extra = [colo, region, country].filter(Boolean).join(", ");
+    serverEl.textContent = extra ? `${WORKER_BASE} · ${extra}` : WORKER_BASE;
+
+    return true;
+  } catch (e) {
+    healthDot.className = "dot bad";
+    healthText.textContent = "Worker: unreachable";
+    serverEl.textContent = WORKER_BASE;
+    return false;
+  }
+}
 
     async function measurePingJitter(){
       setPhase("Diagnostics");

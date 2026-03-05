@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JitterJuice - Speed Test</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500&family=JetBrains+Mono:wght@100;200;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a3e635; }
+
+    .text-glow { text-shadow: 0 0 15px rgba(163, 230, 53, 0.4); }
+    .box-glow { box-shadow: 0 0 20px rgba(163, 230, 53, 0.15); inset 0 0 10px rgba(163, 230, 53, 0.05); }
+
+    @keyframes scan {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(1000%); }
+    }
+    .animate-scanline {
+      animation: scan 3s linear infinite;
+      background: linear-gradient(to bottom, transparent, rgba(163, 230, 53, 0.2), transparent);
+    }
+  </style>
+</head>
+
+<body class="antialiased selection:bg-lime-500/30 selection:text-lime-200 min-h-screen flex flex-col relative overflow-x-hidden bg-zinc-950 text-zinc-300">
+  <!-- Cyberpunk Grid Background -->
+  <div class="fixed inset-0 pointer-events-none opacity-20 z-0"
+       style="background-image: linear-gradient(to right, #27272a 1px, transparent 1px), linear-gradient(to bottom, #27272a 1px, transparent 1px); background-size: 2rem 2rem;">
+  </div>
+
+  <!-- Subtle Radial Gradient for depth -->
+  <div class="fixed inset-0 pointer-events-none z-0"
+       style="background: radial-gradient(circle at 50% 0%, rgba(24,24,27,0) 0%, rgba(9,9,11,1) 80%);">
+  </div>
+
+  <div class="relative z-10 w-full max-w-4xl mx-auto px-4 py-4 md:py-8 flex-1 flex flex-col gap-6 md:gap-10">
+    <!-- Top Bar -->
+    <header class="flex items-center justify-between border-b pb-4 border-zinc-800/50">
+      <div class="flex items-center gap-3">
+        <span class="text-lg md:text-xl uppercase text-glow text-lime-400 font-sans font-light">
+          JitterJuice
+        </span>
+      </div>
+
+      <div class="flex flex-col items-center gap-1 px-3 py-1.5 rounded-full border backdrop-blur-sm bg-zinc-900/50 border-zinc-800">
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 rounded-full animate-pulse box-glow bg-lime-400"></div>
+          <span class="text-xs uppercase text-zinc-400 font-sans font-light tracking-widest" id="status-indicator">
+            Online
+          </span>
+        </div>
+        <div id="preview-hint" class="hidden text-[10px] uppercase text-zinc-600 font-sans font-light tracking-widest">
+          Aura preview may block tests
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button onclick="document.getElementById('history-section').scrollIntoView()" class="text-zinc-500 transition-colors p-1 hover:text-lime-400" title="History">
+          <iconify-icon icon="solar:history-linear" width="20" stroke-width="1.5"></iconify-icon>
+        </button>
+        <button onclick="toggleSettings()" class="text-zinc-500 transition-colors p-1 hover:text-lime-400" title="Settings">
+          <iconify-icon icon="solar:settings-linear" width="20" stroke-width="1.5"></iconify-icon>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Hero Panel -->
+    <main class="flex-1 flex flex-col items-center justify-center min-h-[50vh]">
+      <!-- State: IDLE -->
+      <div id="view-idle" class="flex flex-col items-center gap-8 w-full transition-opacity duration-300">
+        <div class="text-center space-y-2">
+          <h1 class="text-2xl md:text-4xl text-white font-sans font-light">
+            Verify your bandwidth.
+          </h1>
+          <p class="text-sm text-zinc-500 font-sans font-light tracking-widest">
+            Routing to nearest edge node.
+          </p>
+        </div>
+
+        <button onclick="app.startTest()" class="group relative px-8 py-5 backdrop-blur-md border border-lime-500/40 rounded-xl overflow-hidden transition-all hover:box-glow bg-zinc-900/80 hover:bg-zinc-800 hover:border-lime-400">
+          <div class="absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 transition-opacity bg-lime-400/5"></div>
+          <span class="flex items-center gap-3 uppercase text-base font-light text-lime-400 tracking-widest font-sans relative">
+            <iconify-icon icon="solar:play-linear" width="24" stroke-width="1.5"></iconify-icon>
+            Squeeze the Juice
+          </span>
+        </button>
+      </div>
+
+      <!-- State: RUNNING -->
+      <div id="view-running" class="hidden w-full max-w-2xl flex flex-col gap-6 transition-opacity duration-300">
+        <div class="relative w-full border rounded-2xl p-6 md:p-10 backdrop-blur-md overflow-hidden bg-zinc-900/60 border-zinc-800">
+          <!-- Scanline effect -->
+          <div class="absolute top-0 left-0 w-full h-8 animate-scanline z-0 pointer-events-none"></div>
+
+          <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div class="flex flex-col gap-4 w-full md:w-1/2">
+              <div class="text-xs uppercase text-lime-400 font-sans font-light tracking-widest" id="test-phase">
+                Initializing...
+              </div>
+
+              <div class="space-y-4">
+                <div class="flex justify-between items-end border-b pb-2 border-zinc-800">
+                  <span class="text-sm text-zinc-500 flex items-center gap-2 font-sans font-light tracking-widest">
+                    <iconify-icon icon="solar:download-linear"></iconify-icon>
+                    Down
+                  </span>
+                  <span class="text-3xl text-white font-sans font-light" id="live-down">0.0</span>
+                </div>
+
+                <div class="flex justify-between items-end border-b pb-2 border-zinc-800">
+                  <span class="text-sm text-zinc-500 flex items-center gap-2 font-sans font-light tracking-widest">
+                    <iconify-icon icon="solar:upload-linear"></iconify-icon>
+                    Up
+                  </span>
+                  <span class="text-3xl text-white font-sans font-light" id="live-up">0.0</span>
+                </div>
+
+                <div class="flex justify-between items-end pb-2">
+                  <span class="text-sm text-zinc-500 flex items-center gap-2 font-sans font-light tracking-widest">
+                    <iconify-icon icon="solar:routing-2-linear"></iconify-icon>
+                    Ping
+                  </span>
+                  <span class="text-2xl text-zinc-300 font-sans font-light" id="live-ping">--</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Progress Visualization -->
+            <div class="relative w-48 h-48 flex items-center justify-center shrink-0">
+              <svg class="w-full h-full transform rotate-[135deg]" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="#27272a" stroke-width="4" stroke-dasharray="212 283" stroke-linecap="round"></circle>
+                <circle id="progress-ring" cx="50" cy="50" r="45" fill="none" stroke="#a3e635" stroke-width="4"
+                        stroke-dasharray="212 283" stroke-dashoffset="212" stroke-linecap="round"
+                        class="transition-all duration-300 ease-out"></circle>
+              </svg>
+
+              <div class="absolute inset-0 flex flex-col items-center justify-center pt-2">
+                <span class="text-5xl text-lime-400 font-sans font-light" id="progress-pct">0</span>
+                <span class="text-[10px] uppercase text-zinc-500 mt-1 font-sans font-light tracking-widest" id="gauge-unit">
+                  Ready
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Terminal readout -->
+          <div class="mt-6 p-3 rounded border h-24 overflow-y-auto font-mono text-xs text-zinc-500 flex flex-col gap-1 bg-black/50 border-zinc-800/50" id="terminal-output">
+            <div class="font-sans font-light tracking-widest">&gt; connection established</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- State: COMPLETE -->
+      <div id="view-complete" class="hidden w-full flex flex-col gap-8 transition-opacity duration-300">
+        <!-- Hero Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+          <!-- Download -->
+          <div class="backdrop-blur-md border rounded-2xl p-6 md:p-8 flex flex-col relative overflow-hidden group hover:border-lime-500/30 transition-colors bg-zinc-900/40 border-zinc-800">
+            <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+              <iconify-icon icon="solar:download-linear" width="64"></iconify-icon>
+            </div>
+            <span class="text-sm text-zinc-500 uppercase mb-2 flex items-center gap-2 font-sans font-light tracking-widest">
+              Download
+            </span>
+            <div class="flex items-baseline gap-2">
+              <span class="text-6xl md:text-8xl text-glow text-white font-sans font-light" id="res-down">--</span>
+              <span class="text-base md:text-xl text-zinc-500 font-sans font-light">Mbps</span>
+            </div>
+          </div>
+
+          <!-- Upload -->
+          <div class="backdrop-blur-md border rounded-2xl p-6 md:p-8 flex flex-col relative overflow-hidden group hover:border-lime-500/30 transition-colors bg-zinc-900/40 border-zinc-800">
+            <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+              <iconify-icon icon="solar:upload-linear" width="64"></iconify-icon>
+            </div>
+            <span class="text-sm text-zinc-500 uppercase mb-2 flex items-center gap-2 font-sans font-light tracking-widest">
+              Upload
+            </span>
+            <div class="flex items-baseline gap-2">
+              <span class="text-4xl md:text-7xl text-zinc-100 font-sans font-light" id="res-up">--</span>
+              <span class="text-sm md:text-lg text-zinc-600 font-sans font-light tracking-widest">Mbps</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secondary Metrics Box -->
+        <div class="flex flex-wrap md:flex-nowrap gap-4 w-full">
+          <div class="flex-1 border rounded-xl p-4 flex flex-col justify-between bg-zinc-900/30 border-zinc-800">
+            <span class="text-xs text-zinc-500 uppercase font-sans font-light tracking-widest">Ping</span>
+            <div class="mt-2">
+              <span class="text-2xl text-zinc-200 font-sans font-light" id="res-ping">--</span>
+              <span class="text-xs ml-1 text-zinc-600 font-sans font-light tracking-widest">ms</span>
+            </div>
+          </div>
+          <div class="flex-1 border rounded-xl p-4 flex flex-col justify-between bg-zinc-900/30 border-zinc-800">
+            <span class="text-xs text-zinc-500 uppercase font-sans font-light tracking-widest">Jitter</span>
+            <div class="mt-2">
+              <span class="text-2xl text-zinc-200 font-sans font-light" id="res-jitter">--</span>
+              <span class="text-xs ml-1 text-zinc-600 font-sans font-light tracking-widest">ms</span>
+            </div>
+          </div>
+          <div class="flex-1 border rounded-xl p-4 flex flex-col justify-between bg-zinc-900/30 border-zinc-800">
+            <span class="text-xs text-zinc-500 uppercase font-sans font-light tracking-widest">Packet Loss</span>
+            <div class="mt-2">
+              <span class="text-2xl text-zinc-200 font-sans font-light" id="res-loss">0</span>
+              <span class="text-xs ml-1 text-zinc-600 font-sans font-light tracking-widest">%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions & Routing -->
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 py-2">
+          <div class="flex items-center gap-2 text-xs font-mono text-zinc-500">
+            <iconify-icon icon="solar:server-square-linear"></iconify-icon>
+            <span id="res-location" class="font-sans font-light tracking-widest">Routed to: Nearest Edge</span>
+              <span id="res-mode" class="ml-2 px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border border-zinc-700 text-zinc-500">Live</span>
+          </div>
+
+          <div class="w-full flex justify-center">
+  <button onclick="app.startTest()" class="w-full md:w-80 px-6 py-4 rounded-xl text-base md:text-lg transition-colors flex items-center justify-center gap-3 bg-lime-400/10 hover:bg-lime-400/15 border border-lime-500/40 hover:border-lime-400 text-lime-300 font-sans font-light tracking-widest">
+    <iconify-icon icon="solar:refresh-linear"></iconify-icon>
+    Run Again
+  </button>
+</div>
+        </div>
+
+        <!-- What This Means Section -->
+        <div class="mt-4 border rounded-xl overflow-hidden border-zinc-800 bg-zinc-900/20">
+          <button onclick="document.getElementById('analysis-content').classList.toggle('hidden')" class="w-full flex items-center justify-between p-4 transition-colors bg-zinc-900/40 hover:bg-zinc-800/60">
+            <span class="text-sm text-zinc-200 font-sans font-light tracking-widest">What do these numbers mean?</span>
+            <iconify-icon icon="solar:alt-arrow-down-linear" class="text-zinc-500"></iconify-icon>
+          </button>
+          <div id="analysis-content" class="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 border-t hidden border-zinc-800"></div>
+        </div>
+      </div>
+
+      <!-- State: ERROR -->
+      <div id="view-error" class="hidden flex flex-col items-center gap-6 w-full max-w-md text-center">
+        <div class="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-2 border border-red-500/20 text-red-400">
+          <iconify-icon icon="solar:danger-triangle-linear" width="32"></iconify-icon>
+        </div>
+        <h2 class="text-xl text-white font-sans font-light">Juice spill detected.</h2>
+        <p class="text-sm text-zinc-400 font-sans font-light tracking-widest">
+          Unable to establish a stable connection to the edge network. Please check your connection and try again.
+        </p>
+
+        <div class="w-full border rounded-lg p-4 text-left bg-zinc-900/50 border-zinc-800">
+          <span class="text-xs uppercase text-zinc-500 mb-3 block font-sans font-light tracking-widest">Troubleshooting</span>
+          <ul class="text-sm space-y-2 list-disc pl-4 text-zinc-300">
+            <li class="font-sans font-light tracking-widest">Disable active VPNs or proxies.</li>
+            <li class="font-sans font-light tracking-widest">Check if a firewall is blocking the test.</li>
+            <li class="font-sans font-light tracking-widest">Try a wired connection if on Wi-Fi.</li>
+          </ul>
+        </div>
+
+        <button onclick="app.startTest()" class="mt-2 px-6 py-3 rounded-lg text-sm transition-colors bg-zinc-100 text-zinc-900 hover:bg-white font-sans font-light tracking-widest">
+          Try Again
+        </button>
+      </div>
+    </main>
+
+    <!-- History Section -->
+    <section id="history-section" class="mt-12 pt-8 border-t border-zinc-800/50">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg flex items-center gap-2 text-white font-sans font-light tracking-widest">
+          <iconify-icon icon="solar:history-2-linear" class="text-lime-400"></iconify-icon>
+          Telemetry Log
+        </h3>
+        <button onclick="app.clearHistory()" class="text-xs text-zinc-500 transition-colors uppercase hover:text-red-400 font-sans font-light tracking-widest">
+          Clear
+        </button>
+      </div>
+
+      <div class="border rounded-xl overflow-hidden bg-zinc-900/30 border-zinc-800">
+        <div class="grid grid-cols-4 md:grid-cols-5 gap-2 p-3 border-b text-xs uppercase tracking-widest text-zinc-500 font-mono border-zinc-800/50 bg-zinc-900/50">
+          <div class="col-span-2 md:col-span-1 font-sans font-light tracking-widest">Date</div>
+          <div class="text-right font-sans font-light tracking-widest">Down</div>
+          <div class="text-right font-sans font-light tracking-widest">Up</div>
+          <div class="text-right hidden md:block font-sans font-light tracking-widest">Ping</div>
+        </div>
+        <ul id="history-list" class="divide-y divide-zinc-800/50">
+          <li class="p-6 text-center text-sm text-zinc-500 font-mono">No telemetry data found.</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer class="mt-8 pb-8 text-center flex flex-col items-center gap-2">
+      <span class="text-xs uppercase text-zinc-600 font-sans font-light tracking-widest">End of transmission</span>
+    </footer>
+  </div>
+
+  <!-- Settings Modal Overlay -->
+  <div id="settings-modal" class="fixed inset-0 z-50 backdrop-blur-sm hidden items-center justify-center p-4 opacity-0 transition-opacity duration-300 bg-black/80">
+    <div class="border rounded-xl w-full max-w-sm p-6 shadow-2xl transform scale-95 transition-transform duration-300 bg-zinc-900 border-zinc-700" id="settings-panel">
+      <div class="flex justify-between items-center mb-6 border-b pb-4 border-zinc-800">
+        <h3 class="text-base text-white font-sans font-light tracking-widest">Configuration</h3>
+        <button onclick="toggleSettings()" class="text-zinc-500 transition-colors hover:text-white">
+          <iconify-icon icon="solar:close-circle-linear" width="24"></iconify-icon>
+        </button>
+      </div>
+
+      <div class="space-y-6">
+        <!-- Toggle: Save History -->
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-zinc-200 font-sans font-light tracking-widest">Local Telemetry</div>
+            <div class="text-xs text-zinc-500 font-sans font-light tracking-widest">Save test results to device</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="setting-history" class="sr-only peer" checked onchange="app.toggleSetting('history', this.checked)">
+            <div class="w-10 h-5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-lime-500 bg-zinc-700"></div>
+          </label>
+        </div>
+
+        <!-- Toggle: Units -->
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-zinc-200 font-sans font-light tracking-widest">Measurement Unit</div>
+            <div class="text-xs text-zinc-500 font-sans font-light tracking-widest">Megabits vs Megabytes</div>
+          </div>
+          <select id="setting-unit" onchange="app.toggleSetting('unit', this.value)" class="border text-xs rounded block p-1.5 focus:border-lime-500 focus:ring-0 outline-none bg-zinc-950 border-zinc-700 text-zinc-300">
+            <option value="mbps" class="font-sans font-light tracking-widest">Mbps</option>
+            <option value="mbs" class="font-sans font-light tracking-widest">MB/s</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-8">
+        <button onclick="toggleSettings()" class="w-full py-2 text-sm rounded-lg transition-colors bg-zinc-100 text-zinc-900 hover:bg-white font-sans font-light tracking-widest">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script type="module">
+    import SpeedTest from 'https://cdn.jsdelivr.net/npm/@cloudflare/speedtest@1.7.0/+esm';
+
+    const UI = {
+      views: {
+        idle: document.getElementById('view-idle'),
+        running: document.getElementById('view-running'),
+        complete: document.getElementById('view-complete'),
+        error: document.getElementById('view-error')
+      },
+      live: {
+        down: document.getElementById('live-down'),
+        up: document.getElementById('live-up'),
+        ping: document.getElementById('live-ping'),
+        phase: document.getElementById('test-phase'),
+        terminal: document.getElementById('terminal-output'),
+        ring: document.getElementById('progress-ring'),
+        pct: document.getElementById('progress-pct')
+      },
+      res: {
+        down: document.getElementById('res-down'),
+        up: document.getElementById('res-up'),
+        ping: document.getElementById('res-ping'),
+        jitter: document.getElementById('res-jitter'),
+        loss: document.getElementById('res-loss'),
+        location: document.getElementById('res-location')
+      },
+      history: document.getElementById('history-list'),
+      analysis: document.getElementById('analysis-content'),
+      status: document.getElementById('status-indicator'),
+      hint: document.getElementById('preview-hint')
+    };
+
+    const STATE = {
+      history: JSON.parse(localStorage.getItem('jj_history') || '[]'),
+      settings: JSON.parse(localStorage.getItem('jj_settings') || '{"history":true,"unit":"mbps"}'),
+      isDemo: false
+    };
+
+    document.getElementById('setting-history').checked = STATE.settings.history;
+    document.getElementById('setting-unit').value = STATE.settings.unit;
+
+    window.toggleSettings = () => {
+      const modal = document.getElementById('settings-modal');
+      const panel = document.getElementById('settings-panel');
+      if (modal.classList.contains('hidden')) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => { modal.classList.remove('opacity-0'); panel.classList.remove('scale-95'); }, 10);
+      } else {
+        modal.classList.add('opacity-0'); panel.classList.add('scale-95');
+        setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+      }
+    };
+
+    class JitterJuiceApp {
+      constructor() {
+        this.renderHistory();
+        this.maxGauge = 100;
+      }
+
+      switchView(viewName) {
+        Object.entries(UI.views).forEach(([key, el]) => {
+          if (key === viewName) el.classList.remove('hidden');
+          else el.classList.add('hidden');
+        });
+      }
+
+      logTerminal(msg) {
+        const el = document.createElement('div');
+        el.textContent = `> ${msg}`;
+        UI.live.terminal.appendChild(el);
+        UI.live.terminal.scrollTop = UI.live.terminal.scrollHeight;
+      }
+
+      updateGaugeSpeed(val, unit) {
+        UI.live.pct.textContent = val;
+        const unitEl = document.getElementById('gauge-unit');
+        if (unitEl) unitEl.textContent = unit;
+
+        const numVal = parseFloat(val) || 0;
+        if (numVal > this.maxGauge * 0.9) this.maxGauge = numVal * 1.5;
+
+        const fillPct = Math.min(100, (numVal / this.maxGauge) * 100);
+        const offset = 212 - (fillPct / 100) * 212;
+        UI.live.ring.style.strokeDashoffset = offset;
+      }
+
+      formatSpeed(bps) {
+        const mbps = bps / 1_000_000;
+        if (STATE.settings.unit === 'mbs') return (mbps / 8).toFixed(1);
+        return mbps.toFixed(1);
+      }
+
+      setDemoMode(reason) {
+        STATE.isDemo = true;
+        UI.status.textContent = 'Demo Mode';
+        UI.hint.classList.remove('hidden');
+        UI.hint.textContent = 'Preview may block real test. Export + host to run live.';
+        UI.status.classList.remove('text-zinc-400');
+        UI.status.classList.add('text-amber-400');
+        if (reason) this.logTerminal(`ERROR: ${reason}`);
+        this.logTerminal('Falling back to demo simulation...');
+      }
+
+      async startTest() {
+        this.switchView('running');
+        UI.live.terminal.innerHTML = '<div>> initializing sequence...</div>';
+        UI.live.down.textContent = '0.0';
+        UI.live.up.textContent = '0.0';
+        UI.live.ping.textContent = '--';
+        UI.live.phase.textContent = 'Establishing Connection';
+
+        this.maxGauge = 100;
+        this.updateGaugeSpeed(0, 'Ready');
+
+        STATE.isDemo = false;
+        UI.status.textContent = 'Online';
+        UI.status.classList.remove('text-amber-400');
+        UI.status.classList.add('text-zinc-400');
+        UI.hint.classList.add('hidden');
+
+        try {
+          this.logTerminal('Connecting to Cloudflare Edge...');
+
+          const engine = new SpeedTest({
+            autoStart: false,
+            // More robust measurement sequence (still simple, no packet loss)
+            measurements: [
+              { type: 'latency', numPackets: 1 },
+              { type: 'download', bytes: 1e5, count: 2, bypassMinDuration: true },
+              { type: 'latency', numPackets: 20 },
+              { type: 'download', bytes: 1e6, count: 6 },
+              { type: 'upload', bytes: 1e6, count: 6 },
+              { type: 'download', bytes: 1e7, count: 3 },
+              { type: 'upload', bytes: 1e7, count: 3 }
+            ]
+          });
+
+          let currentPhase = '';
+
+          engine.onResultsChange = ({ type }) => {
+            const res = engine.results;
+
+            if (currentPhase !== type) {
+              currentPhase = type;
+              this.maxGauge = 10;
+            }
+
+            if (type === 'latency') {
+              UI.live.phase.textContent = 'Measuring Latency';
+              const ping = res.getUnloadedLatency?.();
+              if (ping != null) {
+                const v = Math.round(ping);
+                UI.live.ping.textContent = v;
+                this.updateGaugeSpeed(v, 'ms');
+              }
+            } else if (type === 'download') {
+              UI.live.phase.textContent = 'Testing Download';
+              const down = res.getDownloadBandwidth?.();
+              if (down != null) {
+                const formatted = this.formatSpeed(down);
+                UI.live.down.textContent = formatted;
+                this.updateGaugeSpeed(formatted, STATE.settings.unit === 'mbs' ? 'MB/s' : 'Mbps');
+              }
+            } else if (type === 'upload') {
+              UI.live.phase.textContent = 'Testing Upload';
+              const up = res.getUploadBandwidth?.();
+              if (up != null) {
+                const formatted = this.formatSpeed(up);
+                UI.live.up.textContent = formatted;
+                this.updateGaugeSpeed(formatted, STATE.settings.unit === 'mbs' ? 'MB/s' : 'Mbps');
+              }
+            }
+          };
+
+          engine.onFinish = (results) => {
+            this.updateGaugeSpeed(0, 'Done');
+            this.logTerminal('Sequence complete. Analyzing data.');
+
+            setTimeout(() => {
+              this.finalizeTest({
+                down: this.formatSpeed(results.getDownloadBandwidth?.() ?? 0),
+                up: this.formatSpeed(results.getUploadBandwidth?.() ?? 0),
+                ping: Math.round(results.getUnloadedLatency?.() ?? 0),
+                jitter: Math.round(results.getUnloadedJitter?.() ?? 0),
+                loss: 0
+              });
+            }, 500);
+          };
+
+          engine.onError = (e) => {
+            throw e instanceof Error ? e : new Error(String(e));
+          };
+
+          engine.play();
+
+        } catch (error) {
+          console.error('Real speedtest failed:', error);
+
+          const msg =
+            (error && typeof error === 'object' && 'message' in error && error.message)
+              ? error.message
+              : String(error);
+
+          const hint =
+            /csp|content security|blocked|sandbox|iframe/i.test(msg) ? 'Blocked by CSP/sandbox (preview)' :
+            /cors/i.test(msg) ? 'CORS blocked network requests (preview)' :
+            /failed to fetch|import/i.test(msg) ? 'Module import/network fetch blocked (preview)' :
+            msg;
+
+          this.setDemoMode(hint);
+          this.runDemoTest();
+        }
+      }
+
+      runDemoTest() {
+        let p = 0;
+        let curDown = 0, curUp = 0;
+        const targetDown = 345 + Math.random() * 50;
+        const targetUp = 120 + Math.random() * 20;
+
+        const interval = setInterval(() => {
+          p += 1;
+
+          if (p < 20) {
+            if (p === 1) this.maxGauge = 10;
+            UI.live.phase.textContent = 'Measuring Latency';
+            if (p % 5 === 0) this.logTerminal('Pinging nearby node...');
+            const ping = Math.floor(12 + Math.random() * 5);
+            UI.live.ping.textContent = ping;
+            this.updateGaugeSpeed(ping, 'ms');
+
+          } else if (p < 60) {
+            if (p === 20) {
+              this.logTerminal('Pumping downstream data...');
+              this.maxGauge = Math.max(100, targetDown * 1.2);
+            }
+            UI.live.phase.textContent = 'Testing Download';
+            curDown += (targetDown - curDown) * 0.1;
+            UI.live.down.textContent = curDown.toFixed(1);
+            this.updateGaugeSpeed(curDown.toFixed(1), STATE.settings.unit === 'mbs' ? 'MB/s' : 'Mbps');
+
+          } else if (p < 95) {
+            if (p === 60) {
+              this.logTerminal('Pushing upstream data...');
+              this.maxGauge = Math.max(100, targetUp * 1.2);
+            }
+            UI.live.phase.textContent = 'Testing Upload';
+            curUp += (targetUp - curUp) * 0.1;
+            UI.live.up.textContent = curUp.toFixed(1);
+            this.updateGaugeSpeed(curUp.toFixed(1), STATE.settings.unit === 'mbs' ? 'MB/s' : 'Mbps');
+
+          } else if (p >= 100) {
+            clearInterval(interval);
+            this.updateGaugeSpeed(0, 'Done');
+            this.logTerminal('Simulation complete.');
+
+            setTimeout(() => {
+              this.finalizeTest({
+                down: curDown.toFixed(1),
+                up: curUp.toFixed(1),
+                ping: 14,
+                jitter: 2,
+                loss: 0
+              });
+            }, 400);
+          }
+        }, 50);
+      }
+
+      finalizeTest(data) {
+        UI.res.down.textContent = data.down;
+        UI.res.up.textContent = data.up;
+        UI.res.ping.textContent = data.ping;
+        UI.res.jitter.textContent = data.jitter;
+        UI.res.loss.textContent = data.loss;
+
+        UI.res.location.textContent = STATE.isDemo ? 'Routed to: Local Simulation' : 'Routed to: Nearest Edge';
+        const modeEl = document.getElementById('res-mode');
+        if (modeEl) {
+          modeEl.textContent = STATE.isDemo ? 'Demo' : 'Live';
+          modeEl.className = STATE.isDemo
+            ? 'ml-2 px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border border-amber-400/30 text-amber-300 bg-amber-400/10'
+            : 'ml-2 px-2 py-0.5 rounded text-[10px] uppercase tracking-widest border border-zinc-700 text-zinc-500';
+        }
+        this.generateAnalysis(data);
+
+        if (STATE.settings.history) {
+          const record = { ...data, date: new Date().toISOString() };
+          STATE.history.unshift(record);
+          if (STATE.history.length > 10) STATE.history.pop();
+          localStorage.setItem('jj_history', JSON.stringify(STATE.history));
+          this.renderHistory();
+        }
+
+        this.switchView('complete');
+      }
+
+      generateAnalysis(data) {
+        const down = parseFloat(data.down);
+        const up = parseFloat(data.up);
+        const ping = parseInt(data.ping, 10);
+
+        const badge = (tier, text) => {
+          if (tier === 'excellent') return `<span class="px-2 py-1 rounded text-[10px] uppercase tracking-widest bg-lime-400/10 text-lime-400 border border-lime-400/20">${text}</span>`;
+          if (tier === 'good') return `<span class="px-2 py-1 rounded text-[10px] uppercase tracking-widest bg-zinc-800 text-zinc-300 border border-zinc-700">${text}</span>`;
+          return `<span class="px-2 py-1 rounded text-[10px] uppercase tracking-widest bg-amber-400/10 text-amber-400 border border-amber-400/20">${text}</span>`;
+        };
+
+        const stream4k = down > 50 ? 'excellent' : (down > 25 ? 'good' : 'poor');
+        const gaming = ping < 40 ? 'excellent' : (ping < 80 ? 'good' : 'poor');
+        const videoCall = (down > 10 && up > 5 && ping < 100) ? 'excellent' : 'good';
+        const largeFiles = up > 20 ? 'excellent' : (up > 5 ? 'good' : 'poor');
+
+        UI.analysis.innerHTML = `
+          <div class="flex items-center justify-between p-3 bg-zinc-900/50 rounded border border-zinc-800/50">
+            <span class="text-xs text-zinc-400">4K Streaming</span>
+            ${badge(stream4k, stream4k === 'excellent' ? 'Flawless' : (stream4k === 'good' ? 'Usable' : 'Buffering'))}
+          </div>
+          <div class="flex items-center justify-between p-3 bg-zinc-900/50 rounded border border-zinc-800/50">
+            <span class="text-xs text-zinc-400">Competitive Gaming</span>
+            ${badge(gaming, gaming === 'excellent' ? 'Crisp' : (gaming === 'good' ? 'Fair' : 'Laggy'))}
+          </div>
+          <div class="flex items-center justify-between p-3 bg-zinc-900/50 rounded border border-zinc-800/50">
+            <span class="text-xs text-zinc-400">Video Calls</span>
+            ${badge(videoCall, videoCall === 'excellent' ? 'Crystal Clear' : 'Unstable')}
+          </div>
+          <div class="flex items-center justify-between p-3 bg-zinc-900/50 rounded border border-zinc-800/50">
+            <span class="text-xs text-zinc-400">Large Uploads</span>
+            ${badge(largeFiles, largeFiles === 'excellent' ? 'Rapid' : (largeFiles === 'good' ? 'Slow' : 'Painful'))}
+          </div>
+        `;
+      }
+
+      renderHistory() {
+        if (!STATE.history.length) {
+          UI.history.innerHTML = '<li class="p-6 text-center text-sm text-zinc-500 font-mono">No telemetry data found.</li>';
+          return;
+        }
+
+        UI.history.innerHTML = STATE.history.map(item => {
+          const d = new Date(item.date);
+          const formatted = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+          return `
+            <li class="grid grid-cols-4 md:grid-cols-5 gap-2 p-3 items-center text-sm font-mono hover:bg-zinc-800/30 transition-colors cursor-default">
+              <div class="col-span-2 md:col-span-1 text-zinc-500 text-xs">${formatted}</div>
+              <div class="text-right text-zinc-200">${item.down}</div>
+              <div class="text-right text-zinc-400">${item.up}</div>
+              <div class="text-right text-zinc-500 hidden md:block">${item.ping}ms</div>
+            </li>
+          `;
+        }).join('');
+      }
+
+      clearHistory() {
+        STATE.history = [];
+        localStorage.removeItem('jj_history');
+        this.renderHistory();
+      }
+
+      toggleSetting(key, val) {
+        STATE.settings[key] = val;
+        localStorage.setItem('jj_settings', JSON.stringify(STATE.settings));
+      }
+    }
+
+    window.app = new JitterJuiceApp();
+  </script>
+</body>
+</html>

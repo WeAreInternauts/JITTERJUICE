@@ -1,1 +1,713 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jitterjuice</title>
+  <style>
+    :root{
+      --bg:#0b0d12;
+      --card:#121625;
+      --card2:#0f1320;
+      --border:rgba(255,255,255,.10);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.65);
+      --good:#35d07f;
+      --warn:#ffcc66;
+      --bad:#ff5a6a;
+      --accent:#8b5cf6;
+      --accent2:#22d3ee;
+      --shadow: 0 16px 50px rgba(0,0,0,.45);
+      --radius:18px;
+    }
 
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 700px at 15% 10%, rgba(139,92,246,.35), transparent 60%),
+                  radial-gradient(900px 600px at 85% 20%, rgba(34,211,238,.22), transparent 60%),
+                  radial-gradient(1000px 600px at 60% 90%, rgba(53,208,127,.14), transparent 60%),
+                  var(--bg);
+      color: var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+
+    .wrap{
+      width:min(1100px, 100%);
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:16px;
+      padding: 2px 2px 10px;
+    }
+
+    .brand{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+
+    .brand h1{
+      margin:0;
+      font-size:22px;
+      letter-spacing:.3px;
+    }
+    .brand p{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.4;
+    }
+
+    .pill{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      padding:10px 12px;
+      border-radius:999px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      font-size:12px;
+      color: var(--muted);
+      user-select:none;
+      white-space:nowrap;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:999px;background:var(--warn);
+      box-shadow: 0 0 0 5px rgba(255,204,102,.12);
+    }
+    .dot.good{ background:var(--good); box-shadow: 0 0 0 5px rgba(53,208,127,.12);}
+    .dot.bad{ background:var(--bad); box-shadow: 0 0 0 5px rgba(255,90,106,.12);}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.05fr 1.25fr 1.05fr;
+      gap:14px;
+    }
+
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      header{ flex-direction:column; align-items:flex-start; }
+      .pill{ width:100%; justify-content:space-between; }
+    }
+
+    .card{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:16px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .card:before{
+      content:"";
+      position:absolute; inset:-2px;
+      background: radial-gradient(420px 220px at 20% 15%, rgba(139,92,246,.25), transparent 60%),
+                  radial-gradient(320px 240px at 85% 25%, rgba(34,211,238,.18), transparent 60%);
+      pointer-events:none;
+      opacity:.6;
+    }
+
+    .card > *{ position:relative; }
+
+    .titleRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    .title{
+      font-size:13px;
+      letter-spacing:.4px;
+      color: rgba(255,255,255,.80);
+      text-transform:uppercase;
+    }
+
+    .tiny{
+      font-size:12px;
+      color: var(--muted);
+    }
+
+    .metricGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .metric{
+      background: rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: 14px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .metric .label{
+      color: var(--muted);
+      font-size:12px;
+    }
+
+    .metric .value{
+      font-size:22px;
+      font-weight: 750;
+      letter-spacing:.2px;
+    }
+
+    .metric .sub{
+      color: var(--muted);
+      font-size:12px;
+    }
+
+    .bigCenter{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .heroRow{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    .statusStack{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .statusLine{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      color: var(--muted);
+      font-size:13px;
+    }
+
+    .bar{
+      height:10px;
+      background: rgba(255,255,255,.08);
+      border-radius:999px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.06);
+    }
+    .bar > div{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, rgba(139,92,246,1), rgba(34,211,238,1), rgba(53,208,127,1));
+      border-radius:999px;
+      transition: width .2s ease;
+    }
+
+    .cta{
+      width:100%;
+      border:none;
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 750;
+      letter-spacing:.2px;
+      color: rgba(255,255,255,.94);
+      background: linear-gradient(90deg, rgba(139,92,246,.95), rgba(34,211,238,.75));
+      cursor:pointer;
+      box-shadow: 0 16px 40px rgba(0,0,0,.35);
+      transition: transform .08s ease, filter .2s ease, opacity .2s ease;
+    }
+    .cta:hover{ filter: brightness(1.05); }
+    .cta:active{ transform: translateY(1px); }
+    .cta[disabled]{ opacity:.55; cursor:not-allowed; }
+
+    .note{
+      font-size:12px;
+      color: var(--muted);
+      line-height:1.4;
+    }
+
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .row{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,.20);
+      border:1px solid rgba(255,255,255,.08);
+      font-size:13px;
+      color: rgba(255,255,255,.86);
+    }
+    .row span{ color: var(--muted); }
+
+    .badge{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.80);
+      white-space:nowrap;
+    }
+
+    .badge.good{ border-color: rgba(53,208,127,.35); background: rgba(53,208,127,.12); color: rgba(208,255,230,.92); }
+    .badge.warn{ border-color: rgba(255,204,102,.35); background: rgba(255,204,102,.12); color: rgba(255,240,210,.92); }
+    .badge.bad{ border-color: rgba(255,90,106,.35); background: rgba(255,90,106,.12); color: rgba(255,215,220,.92); }
+
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size:12px;
+      color: rgba(255,255,255,.70);
+      word-break:break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>Jitterjuice</h1>
+        <p>Real connection test using Cloudflare Workers. No fake numbers. No vibes-based Mbps.</p>
+      </div>
+      <div class="pill">
+        <span id="healthDot" class="dot"></span>
+        <span id="healthText">Worker: not checked</span>
+        <span class="badge" id="workerUrlBadge">set WORKER_BASE</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT: Diagnostics -->
+      <section class="card">
+        <div class="titleRow">
+          <div class="title">Diagnostics</div>
+          <div class="tiny" id="diagHint">Ready</div>
+        </div>
+        <div class="list">
+          <div class="row"><div>Ping (avg)</div><div><b id="pingAvg">—</b> <span>ms</span></div></div>
+          <div class="row"><div>Jitter</div><div><b id="jitter">—</b> <span>ms</span></div></div>
+          <div class="row"><div>Packet loss</div><div><b id="loss">—</b> <span>%</span></div></div>
+          <div class="row"><div>Server</div><div class="mono" id="server">—</div></div>
+        </div>
+        <p class="note" style="margin-top:12px;">
+          Ping/jitter are measured via multiple requests to the Worker. “Packet loss” here means failed requests (not true ICMP loss).
+        </p>
+      </section>
+
+      <!-- CENTER: Main -->
+      <section class="card">
+        <div class="titleRow">
+          <div class="title">Squeeze</div>
+          <div class="badge" id="phaseBadge">Idle</div>
+        </div>
+
+        <div class="bigCenter">
+          <div class="heroRow">
+            <div class="statusStack">
+              <div class="statusLine">Status: <b id="status">Ready to squeeze.</b></div>
+              <div class="statusLine">Progress: <b id="progressText">0%</b></div>
+            </div>
+          </div>
+
+          <div class="bar" aria-label="progress bar"><div id="progressBar"></div></div>
+
+          <button class="cta" id="runBtn">Squeeze the Juice Again</button>
+
+          <div class="metricGrid">
+            <div class="metric">
+              <div class="label">Download</div>
+              <div class="value" id="downMbps">—</div>
+              <div class="sub" id="downDetail">—</div>
+            </div>
+            <div class="metric">
+              <div class="label">Upload</div>
+              <div class="value" id="upMbps">—</div>
+              <div class="sub" id="upDetail">—</div>
+            </div>
+          </div>
+
+          <p class="note">
+            Numbers are based on real bytes transferred. If you’re on a VPN, corporate network, or flaky Wi-Fi, it will show.
+          </p>
+        </div>
+      </section>
+
+      <!-- RIGHT: Results / Quality -->
+      <section class="card">
+        <div class="titleRow">
+          <div class="title">Quality Read</div>
+          <div class="tiny">Simple verdict</div>
+        </div>
+
+        <div class="list">
+          <div class="row">
+            <div>Streaming / calls</div>
+            <div><span class="badge" id="streamBadge">—</span></div>
+          </div>
+          <div class="row">
+            <div>Gaming / realtime</div>
+            <div><span class="badge" id="gameBadge">—</span></div>
+          </div>
+          <div class="row">
+            <div>Upload-heavy work</div>
+            <div><span class="badge" id="uploadBadge">—</span></div>
+          </div>
+          <div class="row">
+            <div>Notes</div>
+            <div class="mono" id="notes">—</div>
+          </div>
+        </div>
+
+        <p class="note" style="margin-top:12px;">
+          This is a “human useful” interpretation. Not a scientific paper. Your ISP will still claim you get “up to” a billion gigawatts.
+        </p>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * IMPORTANT:
+     * 1) Deploy your Cloudflare Worker.
+     * 2) Replace WORKER_BASE below with your Worker URL, e.g.
+     *    https://jitterjuice-speed.yourname.workers.dev
+     */
+    const WORKER_BASE = "https://REPLACE_ME.workers.dev"; // <-- CHANGE THIS
+
+    // Test sizes (tuned for "fast enough but not forever")
+    const DOWNLOAD_BYTES = 20_000_000; // 20MB
+    const UPLOAD_BYTES   = 12_000_000; // 12MB
+    const PING_COUNT = 10;
+
+    // UI refs
+    const el = (id) => document.getElementById(id);
+    const healthDot = el("healthDot");
+    const healthText = el("healthText");
+    const workerUrlBadge = el("workerUrlBadge");
+
+    const statusEl = el("status");
+    const phaseBadge = el("phaseBadge");
+    const progressBar = el("progressBar");
+    const progressText = el("progressText");
+    const runBtn = el("runBtn");
+
+    const pingAvgEl = el("pingAvg");
+    const jitterEl = el("jitter");
+    const lossEl = el("loss");
+    const serverEl = el("server");
+    const diagHintEl = el("diagHint");
+
+    const downMbpsEl = el("downMbps");
+    const downDetailEl = el("downDetail");
+    const upMbpsEl = el("upMbps");
+    const upDetailEl = el("upDetail");
+
+    const streamBadge = el("streamBadge");
+    const gameBadge = el("gameBadge");
+    const uploadBadge = el("uploadBadge");
+    const notesEl = el("notes");
+
+    function setBadge(node, text, kind){
+      node.textContent = text;
+      node.className = "badge" + (kind ? " " + kind : "");
+    }
+
+    function setPhase(text){
+      phaseBadge.textContent = text;
+    }
+
+    function setProgress(pct){
+      const v = Math.max(0, Math.min(100, pct));
+      progressBar.style.width = v + "%";
+      progressText.textContent = Math.round(v) + "%";
+    }
+
+    function fmtMbps(mbps){
+      if (!Number.isFinite(mbps)) return "—";
+      if (mbps >= 100) return Math.round(mbps) + " Mbps";
+      if (mbps >= 10) return mbps.toFixed(1) + " Mbps";
+      return mbps.toFixed(2) + " Mbps";
+    }
+
+    function now(){
+      return performance.now();
+    }
+
+    async function checkWorkerHealth(){
+      workerUrlBadge.textContent = WORKER_BASE.replace(/^https?:\/\//,"");
+
+      if (WORKER_BASE.includes("REPLACE_ME")) {
+        healthDot.className = "dot bad";
+        healthText.textContent = "Worker: set WORKER_BASE in HTML";
+        return false;
+      }
+
+      try {
+        const t0 = now();
+        const res = await fetch(WORKER_BASE + "/ping", { cache: "no-store" });
+        const t1 = now();
+        if (!res.ok) throw new Error("Bad status: " + res.status);
+        const data = await res.json().catch(()=> ({}));
+        healthDot.className = "dot good";
+        healthText.textContent = "Worker: OK (" + Math.round(t1 - t0) + "ms)";
+        serverEl.textContent = WORKER_BASE;
+        return true;
+      } catch (e) {
+        healthDot.className = "dot bad";
+        healthText.textContent = "Worker: unreachable";
+        serverEl.textContent = WORKER_BASE;
+        return false;
+      }
+    }
+
+    async function measurePingJitter(){
+      setPhase("Diagnostics");
+      diagHintEl.textContent = "Measuring ping…";
+      statusEl.textContent = "Checking latency and jitter…";
+      setProgress(5);
+
+      const times = [];
+      let fails = 0;
+
+      for (let i = 0; i < PING_COUNT; i++) {
+        const t0 = now();
+        try{
+          const res = await fetch(WORKER_BASE + "/ping?i=" + i + "&t=" + Date.now(), { cache: "no-store" });
+          if (!res.ok) throw new Error("status");
+          await res.text(); // minimal payload
+          const t1 = now();
+          times.push(t1 - t0);
+        } catch {
+          fails++;
+        }
+        setProgress(5 + (i+1) * (25 / PING_COUNT));
+        await sleep(60);
+      }
+
+      const avg = times.length ? mean(times) : NaN;
+      const jit = times.length ? stddev(times) : NaN;
+      const loss = (fails / PING_COUNT) * 100;
+
+      pingAvgEl.textContent = Number.isFinite(avg) ? Math.round(avg) : "—";
+      jitterEl.textContent = Number.isFinite(jit) ? Math.round(jit) : "—";
+      lossEl.textContent = Math.round(loss);
+
+      diagHintEl.textContent = "Done";
+      return { avg, jit, loss };
+    }
+
+    async function measureDownload(){
+      setPhase("Download");
+      statusEl.textContent = "Pulling bytes from the Worker…";
+      diagHintEl.textContent = "Download running…";
+      setProgress(32);
+
+      const url = WORKER_BASE + "/download?bytes=" + DOWNLOAD_BYTES + "&t=" + Date.now();
+      const t0 = now();
+      let received = 0;
+
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error("Download failed: " + res.status);
+
+      const reader = res.body.getReader();
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        received += value.byteLength;
+
+        // progress from 32% to 72%
+        const p = 32 + (received / DOWNLOAD_BYTES) * 40;
+        setProgress(p);
+      }
+      const t1 = now();
+
+      const seconds = (t1 - t0) / 1000;
+      const mbps = (received * 8) / seconds / 1e6;
+
+      downMbpsEl.textContent = fmtMbps(mbps);
+      downDetailEl.textContent = `${(received/1e6).toFixed(1)} MB in ${seconds.toFixed(2)}s`;
+
+      diagHintEl.textContent = "Done";
+      return { mbps, seconds, received };
+    }
+
+    async function measureUpload(){
+      setPhase("Upload");
+      statusEl.textContent = "Pushing bytes to the Worker…";
+      diagHintEl.textContent = "Upload running…";
+      setProgress(74);
+
+      // Create payload
+      const payload = new Uint8Array(UPLOAD_BYTES);
+      crypto.getRandomValues(payload.subarray(0, Math.min(UPLOAD_BYTES, 65536))); // seed some entropy
+      // (rest stays zeros; still real bytes transferred)
+
+      const t0 = now();
+      const res = await fetch(WORKER_BASE + "/upload?t=" + Date.now(), {
+        method: "POST",
+        headers: { "Content-Type": "application/octet-stream", "Cache-Control": "no-store" },
+        body: payload
+      });
+      const t1 = now();
+
+      if (!res.ok) throw new Error("Upload failed: " + res.status);
+      const data = await res.json().catch(()=> ({}));
+      const received = data.received ?? UPLOAD_BYTES;
+
+      const seconds = (t1 - t0) / 1000;
+      const mbps = (received * 8) / seconds / 1e6;
+
+      upMbpsEl.textContent = fmtMbps(mbps);
+      upDetailEl.textContent = `${(received/1e6).toFixed(1)} MB in ${seconds.toFixed(2)}s`;
+
+      setProgress(96);
+      diagHintEl.textContent = "Done";
+      return { mbps, seconds, received };
+    }
+
+    function interpret({ pingAvg, jitter, loss, down, up }){
+      // Streaming: mostly latency + stability
+      const streamOk =
+        loss < 5 &&
+        pingAvg < 80 &&
+        jitter < 25;
+
+      const streamKind = streamOk ? "good" : (loss < 10 && pingAvg < 120 ? "warn" : "bad");
+      setBadge(streamBadge, streamKind === "good" ? "Good" : streamKind === "warn" ? "OK-ish" : "Rough", streamKind);
+
+      // Gaming: stricter latency/jitter
+      const gameOk =
+        loss < 2 &&
+        pingAvg < 45 &&
+        jitter < 15;
+
+      const gameKind = gameOk ? "good" : (loss < 5 && pingAvg < 75 ? "warn" : "bad");
+      setBadge(gameBadge, gameKind === "good" ? "Good" : gameKind === "warn" ? "Playable" : "Pain", gameKind);
+
+      // Upload-heavy: care about upload Mbps + consistency (we only measure once, so use upload speed + loss/jitter as proxy)
+      const uploadOk = up > 15 && loss < 5;
+      const uploadKind = uploadOk ? "good" : (up > 8 ? "warn" : "bad");
+      setBadge(uploadBadge, uploadKind === "good" ? "Good" : uploadKind === "warn" ? "Limited" : "Oof", uploadKind);
+
+      // Notes
+      const parts = [];
+      if (loss >= 5) parts.push("Request loss is high (Wi-Fi/VPN/congestion).");
+      if (jitter >= 25) parts.push("Jitter is spiky (realtime apps may stutter).");
+      if (down < 25) parts.push("Download is modest (big assets will feel slow).");
+      if (up < 10) parts.push("Upload is the bottleneck (calls + file sends suffer).");
+      if (!parts.length) parts.push("Looks healthy. Go be powerful.");
+      notesEl.textContent = parts.join(" ");
+    }
+
+    function resetUI(){
+      setPhase("Idle");
+      setProgress(0);
+      statusEl.textContent = "Ready to squeeze.";
+      diagHintEl.textContent = "Ready";
+
+      pingAvgEl.textContent = "—";
+      jitterEl.textContent = "—";
+      lossEl.textContent = "—";
+
+      downMbpsEl.textContent = "—";
+      downDetailEl.textContent = "—";
+      upMbpsEl.textContent = "—";
+      upDetailEl.textContent = "—";
+
+      setBadge(streamBadge, "—", "");
+      setBadge(gameBadge, "—", "");
+      setBadge(uploadBadge, "—", "");
+      notesEl.textContent = "—";
+    }
+
+    async function runAll(){
+      runBtn.disabled = true;
+      resetUI();
+
+      try{
+        const ok = await checkWorkerHealth();
+        if (!ok) {
+          statusEl.textContent = "Worker not reachable. Set WORKER_BASE.";
+          setPhase("Fix Worker URL");
+          runBtn.disabled = false;
+          return;
+        }
+
+        setPhase("Running");
+        statusEl.textContent = "Starting the squeeze…";
+        setProgress(2);
+
+        const diag = await measurePingJitter();
+        setProgress(28);
+
+        const down = await measureDownload();
+        setProgress(72);
+
+        const up = await measureUpload();
+        setProgress(100);
+
+        setPhase("Done");
+        statusEl.textContent = "Squeezed. Fresh juice.";
+        interpret({
+          pingAvg: diag.avg,
+          jitter: diag.jit,
+          loss: diag.loss,
+          down: down.mbps,
+          up: up.mbps
+        });
+
+      } catch (e){
+        setPhase("Error");
+        statusEl.textContent = "Something snapped: " + (e?.message || e);
+        setBadge(streamBadge, "—", "");
+        setBadge(gameBadge, "—", "");
+        setBadge(uploadBadge, "—", "");
+        notesEl.textContent = "If you’re on a VPN or adblock is aggressive, try disabling and rerun.";
+      } finally {
+        runBtn.disabled = false;
+      }
+    }
+
+    function mean(arr){
+      return arr.reduce((a,b)=>a+b,0) / arr.length;
+    }
+    function stddev(arr){
+      const m = mean(arr);
+      const v = mean(arr.map(x => (x-m)*(x-m)));
+      return Math.sqrt(v);
+    }
+    function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+    // Hook
+    runBtn.addEventListener("click", runAll);
+
+    // On load, check health (non-blocking)
+    (async function init(){
+      await checkWorkerHealth();
+    })();
+  </script>
+</body>
+</html>

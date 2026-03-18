@@ -184,60 +184,6 @@
       padding: clamp(var(--space-4), 4vh, var(--space-10)) var(--space-6);
     }
 
-    /* ── Side Tab — sketch-shaped flag ─────────────── */
-    /* Tab extrudes from the LEFT edge outward (to the right).
-       Straight edge flush to screen on the LEFT, curved bulge on RIGHT.
-       Text reads TOP → BOTTOM (writing-mode vertical-lr, no rotation). */
-    .side-tab {
-      position: fixed;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 20;
-      display: flex;
-      align-items: center;
-    }
-    .side-tab-flag {
-      position: relative;
-      /* vertical text, reads top-to-bottom */
-      writing-mode: vertical-lr;
-      text-orientation: mixed;
-      padding: 14px 9px;
-      background: rgba(14, 22, 36, 0.55);
-      backdrop-filter: blur(15px) saturate(1.5);
-      -webkit-backdrop-filter: blur(15px) saturate(1.5);
-      /* Left edge straight (flush to screen), right side curves out */
-      border: 1px solid var(--glass-border);
-      border-left: none;
-      border-radius: 0 26px 26px 0;
-      box-shadow:
-        4px 0 20px rgba(0,0,0,0.35),
-        inset 0 1px 0 rgba(255,255,255,0.08),
-        inset -1px 0 0 rgba(255,255,255,0.05);
-      white-space: nowrap;
-      cursor: default;
-    }
-    .side-tab-inner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 7px;
-    }
-    .side-tab-dot {
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 8px var(--accent-glow);
-      flex-shrink: 0;
-    }
-    .side-tab-text {
-      font-family: var(--font-display);
-      font-size: 9px;
-      font-weight: 500;
-      letter-spacing: 0.13em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-    }
 
     /* ── Top bar ────────────────────────────────────── */
     .top-bar {
@@ -670,16 +616,6 @@
     <div class="blob blob-2"></div>
     <div class="blob blob-3"></div>
   </div>
-
-  <!-- Vertical left tab — sketch-shaped flag -->
-  <aside class="side-tab" aria-label="By Internauts™">
-    <div class="side-tab-flag">
-      <div class="side-tab-inner">
-        <div class="side-tab-dot" aria-hidden="true"></div>
-        <span class="side-tab-text">By Internauts™</span>
-      </div>
-    </div>
-  </aside>
 
   <div class="layout">
     <main class="main" role="main">

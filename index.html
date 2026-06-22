@@ -1179,8 +1179,8 @@
           const len   = 40 + Math.random() * 120;
           const speed = 180 + Math.random() * 340; // px/sec
           const yStart = dir === 'down'
-            ? -len  - Math.random() * H()   // start above screen
-            :  H()  + Math.random() * H();  // start below screen
+            ? -len  - Math.random() * H()          // start above screen
+            :  H() * 0.5 + Math.random() * H() * 0.5; // start in bottom half — visible immediately
           lines.push({
             x:     Math.random() * W(),
             y:     yStart,
@@ -1203,7 +1203,7 @@
 
           /* Wrap: when fully off-screen, reset to entry edge */
           if (ln.dir === 'down'  && ln.y > h + ln.len)  ln.y = -ln.len - Math.random() * 60;
-          if (ln.dir === 'up'    && ln.y < -ln.len)      ln.y =  h + Math.random() * 60;
+          if (ln.dir === 'up'    && ln.y < -ln.len)      ln.y =  h * 0.5 + Math.random() * h * 0.5; // re-enter bottom half
 
           /* Draw gradient line (bright head, fading tail) */
           // ln.y = top of segment. 'down' moves +y (falls), 'up' moves -y (rises).

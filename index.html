@@ -740,7 +740,7 @@
             <span class="metric-label">Download</span>
             <div class="metric-value-wrap">
               <span class="metric-value" id="dlVal" data-testid="text-download-value">--</span>
-              <span class="metric-unit">Mbps</span>
+              <span class="metric-unit" id="dlUnit">Mbps</span>
             </div>
             <div class="metric-bar" aria-hidden="true">
               <div class="metric-bar-fill" id="dlBar"></div>
@@ -750,7 +750,7 @@
             <span class="metric-label">Upload</span>
             <div class="metric-value-wrap">
               <span class="metric-value" id="ulVal" data-testid="text-upload-value">--</span>
-              <span class="metric-unit">Mbps</span>
+              <span class="metric-unit" id="ulUnit">Mbps</span>
             </div>
             <div class="metric-bar" aria-hidden="true">
               <div class="metric-bar-fill" id="ulBar"></div>
@@ -787,6 +787,11 @@
     const statusMsg = document.getElementById('statusMsg');
     const speedVal  = document.getElementById('speedVal');
     const speedUnit = document.getElementById('speedUnit');
+    const dlUnit     = document.getElementById('dlUnit');
+    const ulUnit     = document.getElementById('ulUnit');
+    const setSpeedUnit = v => { speedUnit.textContent = fmtUnit(v); };
+    const setDlUnit    = v => { if (dlUnit) dlUnit.textContent = fmtUnit(v); };
+    const setUlUnit    = v => { if (ulUnit) ulUnit.textContent = fmtUnit(v); };
     const pingVal   = document.getElementById('pingVal');
     const dlVal     = document.getElementById('dlVal');
     const ulVal     = document.getElementById('ulVal');
@@ -844,7 +849,12 @@
 
     /* ── Helpers ──────────────────────────────────── */
     const sleep = ms => new Promise(r => setTimeout(r, ms));
-    const fmtMbps = v => v < 10 ? v.toFixed(1) : Math.round(v).toString();
+    const fmtMbps = v => {
+      if (v >= 1000) return (v / 1000).toFixed(2);  // e.g. 1.24 (unit label switches to Gbps)
+      if (v < 10)   return v.toFixed(1);             // e.g. 9.3
+      return Math.round(v).toString();               // e.g. 482
+    };
+    const fmtUnit  = v => v >= 1000 ? 'Gbps' : 'Mbps';
     const fmtMs   = v => Math.round(v).toString();
     const median  = arr => {
       const s = [...arr].sort((a,b)=>a-b);
@@ -1007,10 +1017,10 @@
       const updateUI = mbps => {
         samples.push(mbps);
         const smooth = movingAvg(samples, 4);
-        ulVal.textContent = fmtMbps(smooth);
+        ulVal.textContent = fmtMbps(smooth); setUlUnit(smooth);
         ulBar.style.width  = `${Math.min(smooth/MAX*100,100)}%`;
         setGauge(smooth);
-        speedVal.textContent = fmtMbps(smooth);
+        speedVal.textContent = fmtMbps(smooth); setSpeedUnit(smooth);
       };
 
       /* Keep firing upload chunks until durMs is truly elapsed */
@@ -1043,6 +1053,9 @@
       speedVal.textContent='--';
       speedVal.style.opacity = '1';
       speedUnit.style.opacity = '1';
+      speedUnit.textContent = 'Mbps';
+      dlUnit.textContent = 'Mbps';
+      ulUnit.textContent = 'Mbps';
       document.querySelector('.card').classList.remove('done-glow');
       locInfo.classList.remove('visible');
 
@@ -1074,10 +1087,10 @@
         if (dl!==null) {
           await animateTo(dlVal,dl,550,fmtMbps,v=>{
             dlBar.style.width=`${Math.min(v/MAX*100,100)}%`;
-            setGauge(v); speedVal.textContent=fmtMbps(v);
+            setGauge(v); speedVal.textContent=fmtMbps(v); setSpeedUnit(v); setDlUnit(v);
           });
         }
-        dlVal.textContent=dl!==null?fmtMbps(dl):'--';
+        dlVal.textContent=dl!==null?fmtMbps(dl):'--'; if(dl!==null) setDlUnit(dl);
         dlBar.style.width=dl!==null?`${Math.min(dl/MAX*100,100)}%`:'0%';
         setMetricDone(cardDl,dlVal);
         await sleep(1200);
@@ -1090,10 +1103,10 @@
         if (ul!==null) {
           await animateTo(ulVal,ul,550,fmtMbps,v=>{
             ulBar.style.width=`${Math.min(v/MAX*100,100)}%`;
-            setGauge(v); speedVal.textContent=fmtMbps(v);
+            setGauge(v); speedVal.textContent=fmtMbps(v); setSpeedUnit(v); setUlUnit(v);
           });
         }
-        ulVal.textContent=ul!==null?fmtMbps(ul):'--';
+        ulVal.textContent=ul!==null?fmtMbps(ul):'--'; if(ul!==null) setUlUnit(ul);
         ulBar.style.width=ul!==null?`${Math.min(ul/MAX*100,100)}%`:'0%';
         setMetricDone(cardUl,ulVal);
 

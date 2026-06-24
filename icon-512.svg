@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Dark background gradient matching app theme -->
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#0d1f2d"/>
+      <stop offset="100%" stop-color="#0a1628"/>
+    </linearGradient>
+    <!-- Green accent gradient -->
+    <linearGradient id="bolt" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#39e07a"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+    <!-- Subtle inner glow -->
+    <radialGradient id="glow" cx="50%" cy="55%" r="42%">
+      <stop offset="0%"   stop-color="#39e07a" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#39e07a" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Rounded rect clip -->
+    <clipPath id="shape">
+      <rect width="512" height="512" rx="112" ry="112"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#bg)"/>
+
+  <!-- Subtle glow bloom behind bolt -->
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#glow)"/>
+
+  <!-- Arc rings (scaled from 32→512 = ×16, centered at 256,256) -->
+  <!-- Outer arc right (bright) -->
+  <path d="M256 64 A192 192 0 0 1 448 256"
+        stroke="url(#bolt)" stroke-width="18" stroke-linecap="round"
+        fill="none" opacity="0.9"/>
+  <!-- Outer arc left (dim) -->
+  <path d="M256 64 A192 192 0 0 0 64 256"
+        stroke="url(#bolt)" stroke-width="18" stroke-linecap="round"
+        fill="none" opacity="0.28"/>
+  <!-- Inner arc right -->
+  <path d="M256 144 A112 112 0 0 1 368 256"
+        stroke="url(#bolt)" stroke-width="14" stroke-linecap="round"
+        fill="none" opacity="0.6"/>
+
+  <!-- Lightning bolt (scaled ×16, centered) -->
+  <!-- Original bolt: M18 7 L13.5 17 H17.5 L14.5 27 L22 15.5 H18 L20 7 Z -->
+  <!-- Translate to center: original cx≈17.75, cy≈17 → target 256,256 -->
+  <!-- Shift: tx = 256 - 17.75*16 = 256 - 284 = -28, ty = 256 - 17*16 = 256 - 272 = -16 -->
+  <path d="
+    M 260 96
+    L 188 256
+    H 244
+    L 204 336
+    L 324 232
+    H 268
+    L 292 96
+    Z"
+    fill="url(#bolt)"/>
+</svg>

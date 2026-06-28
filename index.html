@@ -268,6 +268,42 @@
       background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14) 50%, transparent);
       border-radius: 50%;
     }
+    /* Copyright line */
+    .copyright {
+      font-family: var(--font-body);
+      font-size: 0.65rem;
+      font-weight: 300;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.28);
+      text-align: center;
+      margin-top: var(--space-1);
+      user-select: none;
+    }
+
+    /* Internauts badge — fixed bottom-right */
+    .internauts-badge {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 52px;
+      height: 52px;
+      opacity: 0.75;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .internauts-badge:hover {
+      opacity: 1;
+      transform: scale(1.08);
+    }
+    .internauts-badge img {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 6px rgba(0,255,0,0.35));
+    }
+
     /* Done-state glow — lights up the entire frame border */
     .card.done-glow {
       border-color: rgba(57,224,122,0.55);
@@ -780,10 +816,18 @@
           </button>
         </div>
 
+        <!-- Copyright line -->
+        <p class="copyright">2026 &copy; Made by Internauts</p>
+
       </div><!-- .card -->
 
     </main>
   </div>
+
+  <!-- Internauts badge — bottom right -->
+  <a href="https://internauts.app" target="_blank" rel="noopener" class="internauts-badge" aria-label="Made by Internauts">
+    <img src="/badge.svg" alt="Internauts" width="64" height="64">
+  </a>
 
   <script>
   (() => {

@@ -100,3 +100,11 @@ test('overall deadline cancels stalled transfer and restores Start without retry
   assert.ok(release);const deadline=[...h.timers.values()].find(t=>t.ms===75000);assert.ok(deadline,'overall deadline is75seconds');deadline.fn();assert.equal(signal.aborted,true);release();await pending;
   assert.equal(attempts,1);assert.equal(h.get('.card').classList.contains('done-glow'),false);assert.equal(h.get('btnStart').disabled,false);assert.equal(h.timers.size,0);
 });
+test('throughput ranking trials run sequentially so they do not compete for bandwidth',async()=>{
+  const engine=goodEngine();let healthDone=0,activeRanking=0,maxConcurrent=0,rankingTrials=0;
+  engine.uploadRequest=async(_url,payload)=>{healthDone++;return payload.byteLength};
+  const h=harness(engine,{fetch:async()=>{
+    const ranking=healthDone===6;if(ranking){rankingTrials++;activeRanking++;maxConcurrent=Math.max(maxConcurrent,activeRanking)}
+    let sent=false;return {ok:true,status:200,headers:{get:()=> 'application/octet-stream'},body:{getReader:()=>({read:async()=>sent?{done:true}:(sent=true,{done:false,value:new Uint8Array(1048576)}),cancel:async()=>{if(ranking)activeRanking--}})}};
+  }});await h.run();assert.equal(rankingTrials,3);assert.equal(maxConcurrent,1);assert.equal(activeRanking,0);
+});

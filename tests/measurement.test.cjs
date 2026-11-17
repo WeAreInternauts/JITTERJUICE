@@ -78,10 +78,10 @@ test('download hanging headers time out and do not manufacture a zero result',as
   await assert.rejects(clock.settle(engine.download({url:()=>'/data',signal:new AbortController().signal,durationMs:1500,streams:1})),/Insufficient/);
   assert.equal(clock.time,1500);assert.equal(clock.tasks.size,0);
 });
-test('upload progress does not count as HTTP acknowledgement',async()=>{
+test('failed upload never reports acknowledged progress',async()=>{
   const {engine,clock}=setup(()=>{},c=>xhrClass(c,'failure'));let progressed=false;
   await assert.rejects(clock.settle(engine.uploadRequest('/up',new Uint8Array(100),new AbortController().signal,1000,()=>progressed=true)),/HTTP 500/);
-  assert.ok(progressed);assert.equal(clock.time,150,'waits for response, not progress');
+  assert.equal(progressed,false,'failed HTTP request contributes no acknowledged bytes');assert.equal(clock.time,150,'waits for response, not progress');
 });
 test('upload success resolves only after server 2xx',async()=>{
   const {engine,clock}=setup(()=>{},c=>xhrClass(c));
@@ -135,4 +135,10 @@ test('stalled measured upload acknowledgement rejects the phase instead of retur
   });
   await assert.rejects(clock.settle(engine.upload({url:()=>'/up',signal:new AbortController().signal,workers:1,durationMs:2600,warmupMs:400})),/did not acknowledge/);
   assert.equal(clock.tasks.size,0);
+});
+test('upload uses a safelisted content type without an upload progress listener',async()=>{
+  let xhr;
+  const {engine,clock}=setup(()=>{},c=>class extends xhrClass(c){constructor(){super();xhr=this;this.headers={};}setRequestHeader(name,value){this.headers[name]=value;}});
+  await clock.settle(engine.uploadRequest('/up',new Uint8Array(10),new AbortController().signal,1000,()=>{}));
+  assert.equal(xhr.upload.onprogress,undefined,'must not force a CORS preflight via upload listeners');assert.equal(xhr.headers['Content-Type'],'text/plain;charset=UTF-8');
 });

@@ -91,8 +91,13 @@
         error ? reject(error) : resolve(payload.byteLength);
       };
       xhr.open('POST', url, true); xhr.timeout = timeoutMs;
-      xhr.upload.onprogress = event => progress(event.loaded);
-      xhr.onload = () => finish(xhr.status >= 200 && xhr.status < 300 ? null : new Error(`Upload returned HTTP ${xhr.status}`));
+      // No upload event listener: it forces a CORS preflight on cross-origin XHR.
+      // Count payload only after the endpoint acknowledges the POST.
+      if (xhr.setRequestHeader) xhr.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) { progress(payload.byteLength); finish(null); }
+        else finish(new Error(`Upload returned HTTP ${xhr.status}`));
+      };
       xhr.onerror = () => finish(new Error('Upload server unavailable'));
       xhr.ontimeout = () => finish(new Error('Upload timed out'));
       xhr.onabort = () => finish(abortError());
@@ -106,18 +111,20 @@
     // Generate before starting the clock. Warmup requests fully settle before measured requests begin.
     const payload = new Uint8Array(8 * 1024 * 1024);
     for (let offset = 0; offset < payload.length; offset += 65536) crypto.getRandomValues(payload.subarray(offset, offset + 65536));
-    const phase = scope(signal, durationMs + 3500), start = now();
-    let bytes = 0, wireBytes = 0, reserved = 0, errors = 0, size = 4 * 1024;
+    const phase = scope(signal, durationMs + 8500), start = now();
+    let bytes = 0, wireBytes = 0, reserved = 0, errors = 0;
     let measuredAt = null, measuredBytes = 0, finishedAt = null, deadlineHit = false;
     const ticker = setInterval(() => {
       const elapsed = measuredAt === null ? 0 : now() - measuredAt;
       onProgress({ mbps: elapsed > 0 ? measuredBytes * 8 / elapsed / 1000 : 0, bytes: wireBytes, warming: measuredAt === null });
     }, 200);
+    const workerSizes = Array(workers).fill(4 * 1024);
     async function stage(isWarmup) {
       const stageStart = now();
       const launchMs = isWarmup ? warmupMs : Math.max(1000, durationMs - warmupMs - 1000);
       const initialReserved = reserved;
-      async function worker() {
+      async function worker(workerId) {
+        let size = workerSizes[workerId]; // Preserve this worker's learned warmup size.
         while (!phase.signal.aborted && now() - stageStart < launchMs && reserved < maxBytes) {
           if (isWarmup && reserved - initialReserved >= maxBytes / 8) break;
           const chunkSize = Math.min(size, maxBytes - reserved);
@@ -125,19 +132,20 @@
           let previous = 0;
           const requestStart = now();
           try {
-            await uploadRequest(url(), payload.subarray(0, chunkSize), phase.signal, 3000, loaded => { wireBytes += Math.max(0, loaded - previous); previous = loaded; });
+            await uploadRequest(url(), payload.subarray(0, chunkSize), phase.signal, 8000, loaded => { wireBytes += Math.max(0, loaded - previous); previous = loaded; });
             bytes += chunkSize;
             if (!isWarmup) { measuredBytes += chunkSize; finishedAt = now(); }
             const requestMs = now() - requestStart;
-            if (requestMs < 250) size = Math.min(8 * 1024 * 1024, size * 2);
-            else if (requestMs > 600) size = Math.max(4 * 1024, Math.floor(size / 2));
+            const factor = Math.max(0.5, Math.min(2, 400 / Math.max(1, requestMs)));
+            size = Math.max(4 * 1024, Math.min(8 * 1024 * 1024, Math.floor(chunkSize * factor)));
+            workerSizes[workerId] = size;
           } catch (error) {
             if (phase.signal.aborted) { deadlineHit = true; break; }
             errors++; break;
           }
         }
       }
-      await Promise.all(Array.from({ length: workers }, worker));
+      await Promise.all(Array.from({ length: workers }, (_, index) => worker(index)));
     }
     try {
       await stage(true); check(signal);
